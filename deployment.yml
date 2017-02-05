@@ -1,0 +1,11 @@
+---
+- hosts: slave1
+  user: root
+  tasks:
+   - name: stop tomcat
+     command: nohup  /tmp/tomcat/apache-tomcat-7.0.75/bin/catalina.sh stop
+   - name: copy  war file
+     shell: cp WebProject.war /tmp/tomcat/apache-tomcat-7.0.75/webapps/ chdir=/opt/test/
+   - name: start tomcat
+     command: nohup /tmp/tomcat/apache-tomcat-7.0.75/bin/catalina.sh start
+   

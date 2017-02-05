@@ -1,0 +1,10 @@
+---
+ - hosts: server2
+   user: root
+   sudo: yes
+   gather_facts: yes
+   tasks:
+     - name: create a file
+       file: path=/var/www/html/index.html owner=papi group=papi mode=0755
+       register: result
+     - debug: var=result

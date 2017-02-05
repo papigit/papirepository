@@ -1,0 +1,11 @@
+---
+- hosts: server2
+  user: root
+  sudo: yes
+  tasks:
+   - name: change the permissions
+     command: chmod 777 /tmp/abc
+   - name: Append abc to file
+     shell: cat /tmp/abc >> /tmp/file
+#shell is used for operators also ex- shell-- >,<,>>,|
+

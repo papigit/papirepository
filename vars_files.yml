@@ -1,0 +1,16 @@
+---
+ - hosts: server2
+   user: root
+   sudo: yes
+   gather_facts: yes
+   vars_files:
+      - /home/papi/test/conf/abc.yml
+   tasks:
+    - name: install the package
+      yum: name={{ pkg1 }} state=present
+      register: result
+    - debug: var=result
+    - name: restart webserver
+      service: name=httpd state=restarted  
+      register: result
+    - debug: var=result

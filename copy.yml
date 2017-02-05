@@ -1,0 +1,12 @@
+---
+ - hosts: nagios
+   user: root
+   sudo: yes
+   gather_facts: yes
+   tasks:
+    - name: copy the html file to given location
+#      copy: src=/tmp/nagios/index.html dest=/var/www/html/     -- this will copy the ansible masterserver to destination server
+#      command: cp hi /var/www/html/ chdir=/tmp/copyfile       --this will copy the file from destination server to destination server
+#      fetch: src=/tmp/copyfile/hi dest=/var/www/html/ flat=yes  -- this will copy the file from destinatin server to ansible master server
+    - name: restart httpd
+      service: name=httpd state=restarted

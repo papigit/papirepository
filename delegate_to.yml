@@ -1,0 +1,14 @@
+---
+- hosts: webserver
+  user: root
+  sudo: yes
+  gather_facts: yes
+  tasks:
+   - name: Install list of packages
+     yum: name={{item}} state=present
+     with_items:
+         - httpd
+         - lynx
+         - curl
+         - telnet
+     delegate_to: 192.168.233.131
