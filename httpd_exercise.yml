@@ -1,13 +1,12 @@
 ---
- - hosts: server.abc.com
-   user: root
-   sudo: yes
-   gather_facts: no
-   tasks:
-    - name: install apache webserver
-      yum: name=httpd state=present
-    - name: start the service
-      service: name=httpd state=started
-      register: result
-    - debug: var=result
-      
+- hosts: ansibleagent
+  user: root
+  become: true
+  gather_facts: yes
+  tasks:
+   - name: install apache webserver
+     yum: name=httpd state=present
+   - name: start the service
+     service: name=httpd state=started
+     register: result
+   - debug: var=result      
