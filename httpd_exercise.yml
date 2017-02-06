@@ -1,13 +1,9 @@
 ---
-- hosts: ansibleagent
+- hosts: tower
   become_user: root
   become_method: sudo
   become: true
-  gather_facts: yes
+  gather_facts: no
   tasks:
    - name: install apache webserver
      yum: name=httpd state=present
-   - name: start the service
-     service: name=httpd state=started
-     register: result
-   - debug: var=result      
