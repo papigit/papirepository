@@ -1,5 +1,5 @@
 ---
- - hosts: nagios
+ - hosts: ansibleagent
    user: root
    sudo: yes
    gather_facts: yes
