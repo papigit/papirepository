@@ -1,5 +1,5 @@
 ---
-- hosts: tower
+- hosts: ansibleagent
   become_user: root
   become_method: sudo
   become: true
