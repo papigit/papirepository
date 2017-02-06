@@ -1,8 +1,6 @@
 ---
  - hosts: ansibleagent
    user: root
-   become: yes
-   gather_facts: yes
    tasks:
     - name: install apache webserver
       yum: name=httpd state=present
