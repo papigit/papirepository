@@ -4,5 +4,5 @@
   connection: local
   tasks:
    - name: create a file
-     file: path=/tmp/papi/hi.txt
+     command: touch /tmp/copy/hi.txt
   
