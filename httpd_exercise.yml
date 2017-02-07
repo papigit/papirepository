@@ -1,5 +1,5 @@
 ---
-- hosts: ansibleagent
+- hosts: all
   gather_facts: no
   connection: local
   tasks:
