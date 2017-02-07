@@ -1,7 +1,5 @@
 ---
 - hosts: ansibleagent.abc.com
-  user: root
-  sudo: yes
   gather_facts: no
   connection: local
   tasks:
