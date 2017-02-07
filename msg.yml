@@ -5,4 +5,4 @@
  
   tasks:
    - name: copy file
-     command: cp hi /var/www/html chdir=/tmp/papi 
+     command: cp hi /var/www/html chdir=/tmp/papi/
