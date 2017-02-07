@@ -1,8 +1,8 @@
 ---
 - hosts: ansibleagent.abc.com
   gather_facts: no
-  connection: local
+  connection: ssh
+ 
   tasks:
-   - name: create a file
-     command: touch /tmp/copy/hi.txt
-  
+   - name: copy file
+     command: cp hi /var/www/html chdir=/tmp/papi 
