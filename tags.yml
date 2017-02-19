@@ -1,0 +1,18 @@
+---
+- hosts: server2
+  user: root
+  sudo: yes
+  gather_facts: yes
+  tasks:
+   - name: install telnet
+     yum: name=telnet state=present
+   - name: install apache
+     yum: name=httpd state=present
+     tags:
+      - package
+   - name: start apache
+     service: name=httpd state=started
+     tags:
+      - service
+
+     

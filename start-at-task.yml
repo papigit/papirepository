@@ -1,0 +1,41 @@
+- hosts: server2
+  user: root
+  sudo: yes
+  gather_facts: yes
+  vars:
+    pkg: telnet
+  vars_files:
+    - /tmp/playbook/abc.yml
+ # vars_prompt:
+ #   - name: pkg2
+ #     prompt: Enter Package name
+ #     private: no
+  tasks:
+   - name: installing apache
+     yum: name=httpd state=present
+   - name: Copying index.html file
+     copy: src=/tmp/playbook/index.html dest=/var/www/html/
+   - name: installing All packages
+     yum: name={{item}} state=present
+     with_items:
+         - httpd
+         - telnet
+         - curl
+   - name: installing Telnet package
+     yum: name={{pkg}} state=present
+   - name: installing curl package
+     yum: name={{pkg1}} state=present
+ #  - name: installing the given package at prompt
+ #    yum: name={{pkg2}} state=present
+   - name: pause
+     pause:
+       prompt: press enter
+     tags:
+      - services
+   - name: start the apache
+     service: name=httpd state=started
+     register: result
+   - debug: var=result
+#
+#ansible-playbook start-at-task.yml --start-at-task="installing All packages"
+#

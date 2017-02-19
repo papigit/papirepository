@@ -1,0 +1,98 @@
+---
+- hosts: nagios
+  user: root
+  sudo: yes
+  gather_facts: yes
+  tasks:
+     - name: installing pre-requisties packages for Nagios
+       yum: name={{item}} state=present
+       with_items:
+           - httpd
+           - php
+           - gcc
+           - glibc
+           - glibc-common
+           - gd
+           - gd-devel
+
+     - name: create group with name nagcmd
+       command: /usr/sbin/groupadd nagcmd
+     - name: create user nagios
+       user: name=nagios group=nagcmd
+     - name: add apache user to group nagcmd
+       user: name=apache group=nagcmd
+     - name: download nagios binaries
+       get_url: url=https://prdownloads.sourceforge.net/sourceforge/nagios/nagios-3.2.3.tar.gz dest=/root/Downloads
+     - name: download nagios plugins
+       get_url: url=http://nagios-plugins.org/download/nagios-plugins-2.1.1.tar.gz dest=/root/Downloads
+     - name: download nrpe
+       get_url: url=https://sourceforge.net/projects/nagios/files/nrpe-2.x/nrpe-2.9/nrpe-2.9.tar.gz/download dest=/root/Downloads
+     - name: unarchive the nagios core file
+       unarchive: src=/root/Downloads/nagios-3.2.3.tar.gz dest=/root/Downloads copy=no
+     - name: unarchive the nagios plugins
+       unarchive: src=/root/Downloads/nagios-plugins-2.1.1.tar.gz dest=/root/Downloads copy=no
+     - name: unarchive the nrpe
+       unarchive: src=/root/Downloads/nrpe-2.9.tar.gz dest=/root/Downloads copy=no
+
+     - name: Install nagios core file
+       command: sudo {{ item }} chdir=/root/Downloads/nagios-3.2.3/
+       with_items:
+           - ./configure --with-command-group=nagcmd
+           - make
+           - make install
+           - make install-init
+           - make install-config
+           - make install-commandmode
+           - make install-webconf         
+ 
+     - name: set the passowrd for nagios admin
+       shell: htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
+       notify:
+        - start apache
+
+
+     - name: Installing NRPE addon
+       yum: name=openssl-devel state=present
+     - name: configure nrpe
+       command: sudo {{ item }} chdir=/root/Downloads/nrpe-2.9/
+       with_items:
+           - ./configure.sh
+           - make all
+
+     - name: install nagios plugins
+       command: sudo {{ item }} chdir=/root/Downloads/nagios-plugins-2.1.1/
+       with_items:
+           - ./configure.sh --with-nagios-user=nagios --with-nagios-group=nagios
+           - make all
+           - make install
+           - chkconfig --add nagios
+           - chkconfig nagios on
+           - /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+       register: result
+     - debug: var=result
+
+ #      command: nohup /root/Downloads/nrpe-2.9/configure.sh
+ #    - name: making all
+ #      command: make all
+ #    - name: install NRPE Plugin
+ #      command: make install-plugin
+ #    - name: Install Nagios plugins
+ #      command: nohup /root/Downloads/nagios-plugins-2.1.1/configure.sh --with-nagios-user=nagios --with-nagios-group=nagios
+ #    - name: compile the nagios plugins
+ #      command: make all
+ #    - name: install nagios plygins
+ #      command: make install
+ #    - name: Adding auto start up configuration
+ #      command: chkconfig --add nagios
+ #    - name: swithc on configuration
+ #      command: chkconfig nagios on
+     
+     - name: restarting nagios
+       notify:
+         - start nagios
+
+  handlers:
+     - name: start apache
+       service: name=httpd state=started
+     - name: start nagios
+       service: name=nagios state=started

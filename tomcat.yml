@@ -1,0 +1,18 @@
+---
+- hosts: slave1
+  user: root
+  sudo: yes
+  gather_facts: yes
+  tasks:
+   - name: create a directory
+     file: path=/tmp/tomcat state=directory mode=0755
+   - name: download tomcat
+     get_url: url=http://redrockdigimark.com/apachemirror/tomcat/tomcat-7/v7.0.75/bin/apache-tomcat-7.0.75.tar.gz dest=/tmp/tomcat/
+   #- name: move the tar file
+   #  command: mv /root/apache-tomcat-7.0.73.tar.gz /tmp/tomcat
+   - name: unrachive the file
+     unarchive: src=/tmp/tomcat/apache-tomcat-7.0.75.tar.gz dest=/tmp/tomcat/ copy=no
+   - name: download java
+     yum: name=java-1.8.0-openjdk state=present
+   - name: start tomcat
+     command: nohup /tmp/tomcat/apache-tomcat-7.0.75/bin/catalina.sh start

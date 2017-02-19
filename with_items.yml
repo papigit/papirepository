@@ -1,0 +1,16 @@
+---
+- hosts: server2
+  user: root
+  sudo: yes
+  gather_facts: yes
+  tasks:
+   - name: install all the packages
+     yum: name={{item}} state=present
+     with_items:
+        - httpd
+        - curl
+        - telnet
+  # - name: output is showing now
+     register: result
+   - debug: var=result
+

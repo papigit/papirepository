@@ -1,0 +1,9 @@
+---
+- hosts: ansibleagent.abc.com
+  become_user: root
+  become: true
+  gather_facts: no
+  connection: local
+  tasks:
+   - name: install telnet
+     yum: name=telnet state=present

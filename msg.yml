@@ -1,0 +1,8 @@
+---
+- hosts: ansibleagent.abc.com
+  gather_facts: no
+  connection: local
+ 
+  tasks:
+   - name: copy file
+     command: cp hi /var/www/html chdir=/tmp/papi/

@@ -1,0 +1,78 @@
+---
+- hosts: ng1
+  user: root
+  sudo: yes
+  gather_facts: yes
+  tasks:
+   - name: Create a directory
+     file: path=/root/Downloads state=directory
+   - name: download nrpe
+     get_url: url=https://sourceforge.net/projects/nagios/files/nrpe-2.x/nrpe-2.9/nrpe-2.9.tar.gz/download dest=/root/Downloads
+   - name: download nagios plugins	 
+     get_url: url=http://nagios-plugins.org/download/nagios-plugins-2.1.1.tar.gz dest=/root/Downloads
+   - name: unarchive the nrpe
+     unarchive: src=/root/Downloads/nrpe-2.9.tar.gz dest=/root/Downloads copy=no
+   - name: unarchive the plugins
+     unarchive: src=/root/Downloads/nagios-plugins-2.1.1.tar.gz dest=/root/Downloads copy=no
+   - name: Creating user with the name of 'nagios'
+     user: name=nagios state=present
+   - name: Installing NRPE packages
+     yum: name={{ item }} state=present
+     with_items:
+         - openssl-devel
+         - xinetd
+   - name: configure nrpe
+     command: sudo {{ item }} chdir=/root/Downloads/nrpe-2.9/
+     with_items:
+         - ./configure -enable-ssl
+         - make all
+         - make install-plugin
+         - make install-daemon
+         - make install-daemon-config
+         - make install-xinetd		 
+   - name: Adding nagios ipaddress in configuration	
+   #  lineinfile: dest=/etc/xinetd.d/nrpe regexp='^only_from       = 127.0.0.1' line='only_from       = 127.0.0.1 192.168.233.149'
+#lineinfile: dest=/etc/xinetd.d/nrpe
+      #          regexp='^only_from' line='only_from=127.0.0.1 192.168.233.149'
+      #          state=present
+      #          create=True
+     lineinfile:
+      dest: "/etc/xinetd.d/nrpe"
+      state: present
+      regexp: 'only_from       = 127.0.0.1'
+      line: 'only_from       = 127.0.0.1 192.168.233.149'
+     notify:
+       - restart xinetd
+   - name: Install Nagios Plugins
+     command: chown nagios:nagios /usr/local/nagios
+   - name: change the ownersip of nagios libraries
+     command: chown -R nagios:nagios /usr/local/nagios/libexec
+   - name: configure nagios plugin to the agent
+     command: sudo {{ item }} chdir=/root/Downloads/nagios-plugins-2.1.1/
+     with_items:
+         - ./configure
+         - make
+         - make install
+   - name: press enteronce configurefiles nagios.cfg and nagiosagent.cfg manually inserver (/usr/local/nagios/etc/) and agent(/usr/local/nagios/etc/objects/)
+     pause:
+       press enter
+   # step:1  below config manually do on nagoisagent.cfg(take a copy of file and rename with nagisagent.cfg) under /usr/local/nagios/etc/objects/
+   #- name: create configuration file with the Agent name
+   #  copy: src=localhost.cfg dest=nagiosagent.cfg chdir=/usr/local/nagios/etc/objects/
+   #- name: change the ipaddress of nagiosagent in all locations of config file
+   #  lineinfile:
+   #  path: /usr/local/nagios/etc/objects/
+   #  regexp: '^localhost'
+   #  line: 'localhost=nagiosagent'
+   #- name: change the ipaddress of nagiosagent in all locations of config file
+   #  lineinfile:
+   #  path: /usr/local/nagios/etc/objects/
+    # regexp: '^'
+   #  line: 'localhost=nagiosagent'  192.168.233.149
+   # step:2 go to masterserv do config manuall on file nagios.cfg(take a copy of file and rename with nagisagent.cfg) under /usr/local/nagios/etc/objects/
+#  add the parameter cfg_file=usr/local/nagios/etc/nagiosagent.cfg and put the comment of cfg_file=usr/local/nagios/etc/localhost.cfg in nagios.cfg file
+  handlers:
+   - name: restart xinetd
+     service: name=xinetd state=restarted
+   - name: start nagios
+     service: name=nagios state=started

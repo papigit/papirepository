@@ -1,0 +1,9 @@
+---
+- hosts: all
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: todays date
+      command: date
+
+
