@@ -3,6 +3,8 @@
   user: root
   become: yes
   gather_facts: yes
+  var_files:
+     - /home/u0126588/passwd.yml
   tasks:
     - name: copy the file to given location
       copy: src=/home/u0126588/ dest=/home/u0126588/
