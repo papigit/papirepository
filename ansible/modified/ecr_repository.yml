@@ -1,0 +1,9 @@
+---
+- hosts: domaster
+  become: true
+  gather_facts: true
+  tasks:
+   #- name: configure aws region and keys
+   - name: create ecr repository
+     ecs_ecr: name=devops/cool state=present
+

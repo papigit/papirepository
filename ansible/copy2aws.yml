@@ -1,0 +1,12 @@
+---
+- hosts: testproject
+  user: root
+  become: true
+  gather_facts: yes
+  tasks:
+   - name: copy file to aws
+#    file: src=/home/papi/helloworld.zip dest=/tmp
+     copy:
+       src: /home/papi/helloworld.zip
+       dest: /tmp
+

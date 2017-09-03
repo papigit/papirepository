@@ -1,0 +1,8 @@
+---
+- hosts: testproject
+  user:  root
+  become: true
+  gather_facts: yes
+  tasks:
+    - name: Test the connection
+      yum: name=httpd state=present

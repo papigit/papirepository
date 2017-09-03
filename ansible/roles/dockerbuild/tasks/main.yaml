@@ -1,0 +1,44 @@
+---
+- hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+  vars_files:
+    - settings.yaml
+  vars:
+    proj_name: "devopsdashboard"
+    nginx_host: "domaster.ddns.net"
+    nginx_port: 80
+    dashboard_ui_port: 8095
+    user_ui_port: 8093
+  tasks:
+  - name: Create the network
+    docker_network:
+      name: dodashb_network
+
+  - name: build ./nginx/ image  
+    docker_image: 
+      path: ./dev/docker/webserv/
+      name: ddb_webserv
+
+  - name: build ./postgresql/ image  
+    docker_image: 
+      path: ./dev/docker/postgresql/
+      name: postgresql_db
+
+  - name: build ./user-api/ image  
+    docker_image:
+      path: ./dev/docker/user-api/
+      name: user-api
+ 
+  - name: build ./nginx/ image  
+    docker_image: 
+      path: ./dev/docker/nginx/
+      name: ddb_nginx
+
+
+  - name: build ./dashboard-api/ image  
+    docker_image: 
+      path: ./dev/docker/dashboard-api/
+      name: dashboard-api
+

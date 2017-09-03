@@ -1,0 +1,43 @@
+
+#create s3Bucket
+resource "aws_s3_bucket" "b" {
+  bucket = "testbucket1603"
+  acl    = "public-read"
+tags {
+  Name        = "My bucket"
+  Environment = "Dev"
+}
+#resource "aws_s3_bucket_object" "object" {
+#  bucket = "your_bucket_name"
+#  key    = "new_object_key"
+#  source = "path/to/file"
+#  etag   = "${md5(file("path/to/file"))}"
+#  }
+
+website {
+  index_document = "index.html"
+  error_document = "error.html"
+}
+
+versioning {
+  enabled = true
+  }
+
+logging {
+   target_bucket = "${aws_s3_bucket.log_bucket.id}"
+   target_prefix = "log/"
+ }
+}
+resource "aws_s3_bucket" "log_bucket" {
+  bucket = "Test_log_bucket"
+  acl    = "log-delivery-write"
+}
+
+
+#provisioner  "remote-exec" {
+#  inline = [
+#    "chmod +x /etc/ansible/playbooks/s3copy.yml",
+#       "cd /etc/ansible/plabooks/",
+#       "ansible-playbook s3copy.yml"
+#   ]
+#}

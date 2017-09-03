@@ -1,0 +1,16 @@
+---
+- hosts: testproject
+  user: root
+  become: true
+  tasks:
+   - name: ECR login
+     shell: "$(aws ecr get-login --region eu-west-2)"
+
+   - name: create tag and push to repository 
+     docker_image: 
+       name: tomcat
+       repository: 635991583802.dkr.ecr.us-west-2.amazonaws.com/devopsrepo
+       tag: myappserver
+       push: yes
+     register: result
+   - debug: var=result  

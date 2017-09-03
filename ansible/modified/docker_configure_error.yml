@@ -1,0 +1,16 @@
+---
+- hosts: domaster
+  become: true
+  gather_facts: true
+  tasks:
+   - name: aws configure
+     expect:
+       command: aws configure
+       chdir: /tmp
+       responses:
+         AWS Access Key ID [None]: ''
+         AWS Secret Access Key [None]: ''
+         Default region name [None]: "us-east-1"
+         Default output format [None]: "json"
+       echo: yes 
+

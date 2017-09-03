@@ -1,0 +1,7 @@
+---
+- hosts: domaster
+  become: true
+  gather_facts: true
+  tasks:
+   - name: install boto package
+     pip: name=boto3 state=present

@@ -1,0 +1,28 @@
+- hosts: <Publicip>
+  user: root
+  become: yes
+  gather_facts: yes
+
+#  vars:
+#    terraform_dir: /root/Downloads
+
+  tasks:
+   - name : Download Terraform software
+      get_url: https://releases.hashicorp.com/terraform/0.10.2/terraform_0.10.2_linux_amd64.zip?_ga=2.196228268.1257085564.1503566885497200374.1503566885 dest=/root/Downloads
+      
+   - name: unarchivng terraform downloaded software
+       unarchive: src=/root/Downloads/terraform_0.10.0_linux_amd64.zip dest=/root/Downloads copy=no
+   
+   - name: Set terraform path
+     command: export PATH=/root/Downloads/terrraform/:$PATH
+     
+#  environment:
+#    Terraform__DIR: /root/Downloads
+#    PATH: /root/Downloads/terraform:{{ ansible_env.PATH }}
+    
+#  tasks:
+#  - name: check for packae
+#    stat:
+#      path: '{{ terraform__dir }}/package'
+#    register: package
+ 

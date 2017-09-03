@@ -1,0 +1,8 @@
+- hosts: domaster
+  become: true
+  gather_facts: true
+  tasks:
+   - name: list of docker images
+     command: docker ps -a
+     register: result
+   - debug: var=result

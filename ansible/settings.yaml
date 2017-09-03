@@ -1,0 +1,5 @@
+---
+warName: "MvnGitApp.war"
+localWarPath: "../../target"
+remoteWarPath: "/usr/share/temp"
+

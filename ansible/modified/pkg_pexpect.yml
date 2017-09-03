@@ -1,0 +1,7 @@
+---
+- hosts: domaster
+  become: true
+  gather_facts: true
+  tasks:
+   - name: install pexpect package
+     apt: name=pexpect state=present
