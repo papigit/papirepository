@@ -1,0 +1,68 @@
+--- 
+- hosts: server1
+  user: root
+  become: yes
+  gather_facts: yes
+  var_files:
+     - /home/u0126588/passwd.yml
+  tasks:
+    - name: copy the file to given location
+      copy: src=/home/u0126588/ dest=/home/u0126588/
+    - name: install rpm package
+      command: rpm -Uhv jdk-7u79-linux-x64.rpm chdir=/home/u0126588/
+  #  - name: creating symbolic links to java
+  #    alternatives:
+  #      name: java
+  #      path: /usr/java/latest/jre/bin/java
+  #      priority: 200000
+  #  - name: creating symbolic links to javaws
+  #    alternatives:
+  #      name: javaws
+  #      path: /usr/java/latest/jre/bin/javaws
+  #      priority: 200000
+  #  - name: creating symbolic links to javac
+  #    alternatives:
+  #      name: javac
+  #      path: /usr/java/latest/bin/javac
+  #      priority: 200000
+  # - name: creating symbolic links to jar
+  #    alternatives:
+  #      name: jar
+  #      path: /usr/java/latest/bin/jar
+  #      priority: 200000
+
+   - name: creating symbolic links to java files
+     command: sudo {{ item }} 
+     with_items: 
+         - alternatives --install /usr/bin/java java /usr/java/latest/jre/bin/java 200000
+         - alternatives --install /usr/bin/javaws javaws /usr/java/latest/jre/bin/javaws 200000
+         - alternatives --install /usr/bin/javac javac /usr/java/latest/bin/javac 200000
+         - alternatives --install /usr/bin/jar jar /usr/java/latest/bin/jar 200000
+   - name: create group
+     group: name=ariba state=present
+   - name: creating user and adding to group
+     user: name=ariba group=ariba password={{ password_hash }} generate_ssh_key=yes state=present
+   - name: Create a directory 
+     file: path=/opt/ariba-cloud-integration state=directory mode=0755 owner=ariba
+ # if you want to copy from source location to destination use thebelow task
+#  - name: copy the file to given location
+#    copy: src=/home/papi/ dest=/opt/ariba-cloud-integration/
+# if you want to copy from destination  to destination use the below task
+   - name: copy the file to given location
+     command: cp {{ item }} chdir=/home/u0126588/ /opt/ariba-cloud-integration/
+     with_items:
+         - file1
+         - file2
+         - file3
+   - name: create a symbolic link
+     file: src=/opt/ariba-cloud-integration/ariba-cloud-integration-1.0.0.0.jar  dest=/etc/init.d/ariba-cloud-integration state=link
+   - name: start the ariba service
+     service: name=ariba-cloud-integration state=present
+   - name: Application to startup on reboot
+     command: sudo {{ item }} chdir=/etc/init.d/ 
+     with_items: 
+         - chkconfig --add ariba-cloud-integration
+         - chkconfig ariba-cloud-integration on 
+
+
+
