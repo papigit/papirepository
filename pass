@@ -1,0 +1,9 @@
+
+temn_tafj_jdbc_username: "T24DRH_ONE_USR"
+temn_tafj_jdbc_password: "T24DRHONEUSR_123"
+
+oracle_username: "sys"
+oracle_password: "sys_1234"
+
+import_db_user: "T24DRH_ONE_USR"
+import_db_user_password: "T24DRHONEUSR_123"
