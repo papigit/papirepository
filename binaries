@@ -1,0 +1,149 @@
+---
+  - name: Check if aws is already installed
+    shell: which aws
+    register: aws_check
+    ignore_errors: true
+    become: true
+
+  - name: Check to see if pip is already installed.
+    command: "pip --version"
+    ignore_errors: true
+    changed_when: false # read-only task
+    #check_mode: no
+    register: pip_is_installed
+    become: true
+
+  - name: Giving RWX Permissions to tmp dir
+    file:
+     path: /tmp
+     mode: 0775
+    become: true
+
+  - name: create directory to store the binaries
+    file:
+     path: /opt/binaries
+     state: directory
+     owner: ec2-user
+     group: ec2-user
+     mode: 0775
+     recurse: yes
+    become: true
+
+  - name: install zip/unzip, tar, ksh and other required packages
+    yum: name={{ item }} state=present
+    with_items:
+        - zip
+        - unzip
+        - ksh
+        - tar
+        - bzip2
+        - python-setuptools
+        - postgresql-devel
+        - gcc
+        - python-devel
+        - git
+    become: true
+
+  - name: Transfer awscli
+    copy:
+      src: awscli-bundle.zip
+      dest: "/tmp/awscli-bundle.zip"
+    when: ((aws_check.stdout.find('no aws in') != -1)or(aws_check.stderr.find('no aws in') != -1))
+
+  - name: install awscli
+    shell: "cd /tmp;unzip awscli-bundle.zip;sudo ./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws"
+    become: true
+    when: ((aws_check.stdout.find('no aws in') != -1)or(aws_check.stderr.find('no aws in') != -1))
+
+  - name: Generate script file to download binaries from s3
+    template:
+     src: s3bucket.j2
+     dest: /opt/binaries/s3bucket.sh
+     mode: 0755
+    become: true
+
+  - name: download pip Binaries
+    shell: /bin/bash -c "/opt/binaries/s3bucket.sh pip-9.0.1.tar.gz"
+    become: true
+    when: pip_is_installed.rc != 0
+
+  - name: Extract archive for pip
+    unarchive:
+     src: /opt/binaries/{{ pip_file }}
+     dest: /opt/binaries
+     copy: no
+    ignore_errors: yes
+    when: pip_is_installed.rc != 0
+
+  - name: Install PiP
+    command: /bin/bash -c "python setup.py install" chdir=/opt/binaries/pip-9.0.1
+    become: true
+    ignore_errors: yes
+    when: pip_is_installed.rc != 0
+
+#  - name: download other Binaries
+#    shell: /bin/bash -c "/opt/binaries/s3bucket.sh binaries.tgz"
+#    become: true
+#
+#  - name: Extract binaries
+#    unarchive:
+#     src: /opt/binaries/binaries.tgz
+#     dest: /opt/binaries
+#     copy: no
+#    ignore_errors: yes
+
+  - name: download Boto Binaries
+    shell: /bin/bash -c "/opt/binaries/s3bucket.sh {{ boto_file }}"
+    become: true
+
+  - name: install boto pkg
+    pip:
+     name: file:/opt/binaries/{{ boto_file }}
+    become: true
+    ignore_errors: yes
+
+  - name: download psycopg2 Binaries
+    shell: /bin/bash -c "/opt/binaries/s3bucket.sh {{ psycopg2_file }}"
+    become: true
+
+  - name: install psycopg2 pkg
+    pip:
+     name: file:/opt/binaries/{{ psycopg2_file }}
+    become: true
+    ignore_errors: yes
+    
+    
+    vars:
+    access_key: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') }}"
+secret_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}"
+
+
+DEFAULT:
+---
+install_binaries:
+  - "{{ psycopg2_file }}"
+  - "{{ setuptools_file }}"
+  - "{{ dateutils_file }}"
+  - "{{ future_file }}"
+  - "{{ pycrypto_file }}"
+  - "{{ docutils_file }}"
+  - "{{ ptyprocess_file }}"
+  - "{{ botocore_file }}"
+  - "{{ s3transfer_file }}"
+  - "{{ futures_file }}"
+  - "{{ pexpect_file }}"
+  - "{{ boto3_file }}"
+  - "{{ jmespath_file }}"
+  
+  
+  
+  #/bin/sh
+export http_proxy=
+export https_proxy=
+export NO_PROXY=
+#sudo easy_install pip
+#pip install awscli --ignore-installed six
+aws s3 cp {{ aws_bucket }}/$1 {{ download_location }} --sse aws:kms --sse-kms-key-id {{ kms_key_id }}
+chmod -R 777 {{ download_location }}/$1
+
+
