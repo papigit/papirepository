@@ -1,0 +1,7 @@
+stage('Connectivity Test') {
+    def ENV_REMOTE_USER = getUserFromEnv("${DB_HOSTNAME}", 'aws')
+		 withEnv(['ANSIBLE_HOST_KEY_CHECKING=False']) {
+				   ansiblePlaybook credentialsId: 'tapkey', vaultCredentialsId: 'vaultpass', extras: "-v -e remote_server=fin -e deploy_env=${ENVIRONMENT} -e finserverip=${FINSERVER} -e ocsserverip=${OCSSERVER} -e tcibserverip=${TCIBSERVER} -e db_hostname=${DB_HOSTNAME} -e db_port=${DB_PORT} -e db_dbname=${DB_DBNAME} -e remote_user=${ENV_REMOTE_USER}", installation: 'Ansible 2.1', inventory: 'runtime_hosts', playbook: 'playbooks/test.yml'
+				   					}
+}						
+
