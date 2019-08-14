@@ -1,0 +1,11 @@
+- name: Run TAFJ Install script
+  expect:
+   command: "/t24/{{ deploy_env }}/Temenos/Install/Setup_TAFJ.R16.SP6.0.sh"
+   chdir: "/t24/{{ deploy_env }}/Temenos/Install/"
+   responses:
+    Press ENTER to continue.*: ''
+    Please enter the install Directory: "/t24/{{ deploy_env }}/Temenos/TAFJ"
+    Please enter the eclipse home directory: "/t24/{{ deploy_env }}/Temenos/TAFJ/conf"
+    (.*Create \(y\/n\).*): "y"
+    Press ENTER to terminate.: ''
+   echo: yes
