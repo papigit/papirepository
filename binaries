@@ -169,3 +169,156 @@ base_dir: "jboss"
 #-------------------------
 aws_bucket: "s3://pbwmcd-inventory"
 download_location: "/{{ base_dir }}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+- name: download pre-requiste Binaries in location {{ download_location }}
+  shell: /bin/bash -c "/{{ base_dir }}/s3bucket.sh common {{ item }}"
+  become: true
+  with_items:
+      - "{{ setuptools_file }}"
+      - "{{ pip_file }}"
+      - "{{ ptyprocess_file }}"
+      - "{{ pexpect_file }}"
+      - "{{ future_file }}"
+      - "{{ futures_file }}"
+      - "{{ dateutils_file }}"
+      - "{{ docutils_file }}"
+      - "{{ jmespath_file }}"
+      - "{{ botocore_file }}"
+      - "{{ s3transfer_file }}"
+      - "{{ boto_file }}"
+      - "{{ pycrypto_file }}"
+      - "{{ ora_client_file }}"
+      - "{{ jboss_file }}"
+      - "{{ jdk8_file }}"	  
+- name: download TDS Binaries in location {{ download_location }}
+  shell: /bin/bash -c "/{{ base_dir }}/s3bucket.sh tds {{ item }}"
+  become: true
+  with_items:
+      - "{{ deployment_binary_file }}"
+      - "{{ db_binary_file }}"
+   #   - "{{ prodb_filename }}"
+      - "{{ pdbcli_filename }}"
+      - "{{ deploy_file }}"
+
+- name: Unarchive setup Tools zip file
+  shell: /bin/bash -c "unzip -o /{{ base_dir }}/binaries/setuptools-36.2.7.zip" chdir=/{{ base_dir }}/binaries
+  become: true
+  ignore_errors: yes
+
+#  unarchive:
+#   src: /{{ base_dir }}/binaries/{{ setuptools_file }}
+#   dest: /{{ base_dir }}/binaries
+#   copy: no
+#  become: true
+
+- name: Install setup Tools
+  command: /bin/bash -c "python setup.py install" chdir=/{{ base_dir }}/binaries/setuptools-36.2.7
+  become: true
+  ignore_errors: yes
+
+
+
+- name: Unarchive pip tar
+  unarchive:
+   src: /{{ base_dir }}/binaries/{{ pip_file }}
+   dest:  /{{ base_dir }}/binaries
+   copy: no
+  become: true
+
+
+#- name: Extract archive for pip
+#  command: tar -xvzf /{{ base_dir }}/binaries/{{ pip_file }} chdir="/{{ base_dir }}/binaries"
+#  ignore_errors: yes
+- name: set permissions to source directory
+  file:
+   path: "/{{ base_dir }}/binaries"
+   recurse: yes
+   mode: 0777
+  become: true
+
+
+- name: Install PIP
+  command: /bin/bash -c "python setup.py install" chdir=/{{ base_dir }}/binaries/pip-9.0.1
+  become: true
+  ignore_errors: yes
+
+
+- name: install ptyprocess
+  pip:
+   name: file:/{{ base_dir }}/binaries/{{ ptyprocess_file }}
+  become: true
+  ignore_errors: yes
+
+- name: install pexpect
+  pip:
+   name: file:/{{ base_dir }}/binaries/{{ pexpect_file }}
+  become: true
+  ignore_errors: yes
+
+- name: install python-futures pkg
+  pip:
+   name: file:/{{ base_dir }}/binaries/{{ futures_file }}
+  become: true
+  ignore_errors: yes
+
+- name: install date-utils pkg
+  pip:
+   name: file:/{{ base_dir }}/binaries/{{ dateutils_file }}
+  become: true
+  ignore_errors: yes
+
+- name: install doc-utils pkg
+  pip:
+   name: file:/{{ base_dir }}/binaries/{{ docutils_file }}
+  become: true
+  ignore_errors: yes
+
+
+- name: install jms-utils pkg
+  pip:
+   name: file:/{{ base_dir }}/binaries/{{ jmespath_file }}
+  become: true
+  ignore_errors: yes
+
+
+- name: install boto core  pkg
+  pip:
+   name: file:/{{ base_dir }}/binaries/{{ botocore_file }}
+  become: true
+  ignore_errors: yes
+
+- name: install stransfer
+  pip:
+   name: file:/{{ base_dir }}/binaries/{{ s3transfer_file }}
+  become: true
+  ignore_errors: yes
+
+
+- name: install boto3
+  pip:
+   name: file:/{{ base_dir }}/binaries/{{ boto_file }}
+  become: true
+  ignore_errors: yes
+
+
+- name: Execute permissions for python packages
+  file:
+   path: /usr/lib/python2.7
+   mode: 0775
+   recurse: yes
+  become: true
+  #command: chmod -R 755 /usr/lib/python2.7
+  #become: true
