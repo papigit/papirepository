@@ -1,0 +1,80 @@
+Full Stack Application
+Introduction
+You will need to write code to build a new full stack application which has front-end, back-end and a database.
+
+Tools
+Use Java/Python/Other programming language of your choice
+Use Spring Boot/Django/Other frameworks for building the REST service
+Use React/Angular/Other frameworks for building the front end
+Use equivalent unit tests frameworks where required
+Use any database of choice like PostgreSQL/MySQL/others 
+Use github/gitlab for source code repository and pipelines
+
+Requirements
+Build a simple customer REST Service supporting CRUD operations using a database. The customer records should be stored on the database.
+                GET - List all the customers
+                PUT - Update an existing customer record
+                POST - Create a new customer record
+                DELETE - Delete a existing customer record
+
+Build a simple user interface for supporting the CRUD operations on the REST service
+
+JSON Structure For Customer
+{"first-name":"Tom", 
+ "middle-name":"",
+"last-name":"Hanks",
+"date-of-birth":"10-May-1978",
+"mobile-number":"+65 84321111",
+"gender":"M",
+"customer-number":"AU10042001",
+"country-of-birth":"US",
+"country-of-residence":"SG",
+"customer-segment":"Retail",
+"addresses":[
+   {
+     "type":"Residence",
+     "addr-line1":"Pickering Street",
+     "addr-line2":"#10-231",
+     "addr-line3":"",
+     "addr-line4":"",
+     "country-code":"SG",
+     "zipcode":"512161",
+     "state":"",
+     "city":"Singapore"
+   },
+   {
+     "type":"Office",
+     "addr-line1":"Changi Business Park",
+     "addr-line2":"#04-31",
+     "addr-line3":"",
+     "addr-line4":"",
+     "country-code":"SG",
+     "zipcode":"409768",
+     "state":"",
+     "city":"Singapore"
+   }
+   ]
+}
+
+Infrastructure as Code on Cloud Platform
+
+Introduction
+You will need to write code to provision an infrastructure in any cloud provider of your choice for a web application hosting. The web application follows the reference architecture of AWS https://media.amazonwebservices.com/architecturecenter/AWS_ac_ra_web_01.pdf 
+
+Tools
+Use terraform/cloud formation/equivalent for creating infrastructure using code
+Use Ansible/Chef/Puppet/others for 
+                a) Platform deployments like nginx, tomcat or others
+                b) Application components like static content, spring boot microservices etc.
+Use github/gitlab for source code repository and pipelines
+
+Requirements
+Build a new environment in cloud using the reference architecture and run via Jenkins pipeline. 
+Use the REST application built in the previous exercise to deploy them on the Application Servers
+Use the static content created in the previous exercise to deploy on the Web Servers
+Use an RDS/equivalent service as the database
+Please setup autoscaling for both Web & App Server layers to increase/decrease capacity based on the demand
+Use ELB's for both Web & App Server layers
+Enable Multi-AZ for the RDS/equivalent database
+Cloud Front shown in the architecture is optional - add only if you have time.
+
