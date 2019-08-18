@@ -1,0 +1,308 @@
+---
+- name: Create Instance directory if not exists
+  file: path=/apps/httpd state=directory recurse=yes owner={{ http_user }} group={{ http_user }} mode=0755
+  
+- name: Create Logs directory if not exists
+  file: path=/apps/support/logs/httpd state=directory recurse=yes owner={{ http_user }} group={{ http_user }} mode=0755
+
+- name: Create httpd dump directory if not exists
+  file: path=/apps/support/dump/httpd state=directory recurse=yes owner={{ http_user }} group={{ http_user }} mode=0755
+  
+- name: creating sub folders directories
+  file: path="{{ item }}" state=directory recurse=yes owner={{ http_user }} group={{ http_user }} mode=0755
+  with_items:
+        - "{{ httpd_home }}/conf"
+        - "{{ httpd_home }}/conf.d"
+        - "{{ httpd_home }}/ssl"
+        - "{{ httpd_home }}/bin"
+
+- name: Create Symbolic link for modules...!
+  file: src=/etc/httpd/modules dest={{ httpd_home }}/modules state=link owner={{ http_user }} group={{ http_user }}
+
+- name: creating sub folders directories
+  file: path="{{ item }}" state=directory recurse=yes owner={{ http_user }} group={{ http_user }} mode=0755
+  with_items:
+        - "{{ httpd_log_base }}/run"
+        - "{{ httpd_log_base }}/run/sslcache"
+
+- name: copy httpd/conf.d configs
+  copy: src="{{ item }}" dest="{{ httpd_home }}/conf.d/{{ item }}" owner={{ http_user }} group={{ http_user }} mode=0755
+  with_items:
+      - welcome.conf
+      - autoindex.conf
+      - README
+
+- name: copy httpd/conf configs
+  copy: src=magic dest="{{ httpd_home }}/conf/magic" owner={{ http_user }} group={{ http_user }} mode=0755
+  
+- name: Create Symbolic link for logs...!
+  file: src={{ httpd_log_base }} dest={{ httpd_home }}/logs state=link owner={{ http_user }} group={{ http_user }}
+  
+- name: copy httpd.conf template
+  template: src=httpd.conf.j2 dest="/apps/httpd/conf/httpd.conf" owner={{ http_user }} group={{ http_user }}
+     
+- name: Copy ssl.conf template
+  template: src=ssl.conf.j2 dest="/apps/httpd/conf.d/ssl.conf.disabled" owner={{ http_user }} group={{ http_user }}
+  
+- name: Copy http_ctl script template
+  template: src=httpd_ctl.sh.j2 dest="/apps/httpd/bin/httpd_ctl.sh" owner={{ http_user }} group={{ http_user }} mode=0755
+
+- name: Copy mod_proxy_balancer template
+  template: src=mod_proxy_balancer.conf.j2 dest="/apps/httpd/conf.d/mod_proxy_balancer.conf" owner={{ http_user }} group={{ http_user }}
+
+
+-----------------------------------------------------------------
+
+http.conf/j2
+
+# @@@ ANSIBLE MANAGED @@@
+ServerRoot "{{ httpd_home }}"
+
+Listen {{ httpd_listen_port }}
+PidFile logs/httpd.pid
+DefaultRuntimeDir logs/run/
+
+MaxKeepAliveRequests 1500
+KeepAlive On
+Timeout 200
+KeepAliveTimeout 15
+HostnameLookups Off
+ServerSignature Off
+AddDefaultCharset UTF-8
+EnableSendfile off
+ServerTokens prod
+UseCanonicalName Off
+
+LimitRequestBody 1048576
+LimitRequestFieldsize 1024
+LimitRequestFields 100
+LimitRequestline 512
+
+
+User {{ http_user }}
+Group {{ http_user }}
+
+
+#BASE MODULES
+LoadModule access_compat_module modules/mod_access_compat.so
+LoadModule alias_module modules/mod_alias.so
+LoadModule authz_core_module modules/mod_authz_core.so
+LoadModule autoindex_module modules/mod_autoindex.so
+LoadModule dir_module modules/mod_dir.so
+LoadModule log_config_module modules/mod_log_config.so
+LoadModule logio_module modules/mod_logio.so
+LoadModule mime_module modules/mod_mime.so
+LoadModule negotiation_module modules/mod_negotiation.so
+LoadModule rewrite_module modules/mod_rewrite.so
+LoadModule setenvif_module modules/mod_setenvif.so
+LoadModule unixd_module modules/mod_unixd.so
+
+#PROXY MODULES
+# This file configures all the proxy modules:
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_connect_module modules/mod_proxy_connect.so
+LoadModule proxy_ajp_module modules/mod_proxy_ajp.so
+
+#SSL
+LoadModule ssl_module modules/mod_ssl.so
+LoadModule socache_shmcb_module modules/mod_socache_shmcb.so
+
+#MPM
+LoadModule mpm_worker_module modules/mod_mpm_worker.so
+<IfModule worker.c>
+ThreadLimit 30
+ServerLimit 10
+StartServers 3
+MinSpareThreads 5
+MaxSpareThreads 20
+MaxClients 300
+ThreadsPerChild 30
+MaxRequestsPerChild 0
+</IfModule>
+
+DocumentRoot "/var/www/html"
+
+<Directory />
+    Options -Indexes -FollowSymLinks
+	AllowOverride None
+	Require all granted
+</Directory>
+
+# Further relax access to the default document root:
+<Directory "/var/www/html">
+    Options -Indexes -FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+
+DirectoryIndex index.html index.html.var
+
+<IfModule dir_module>
+    DirectoryIndex index.html
+</IfModule>
+
+
+<Files ".ht*">
+    Require all denied
+</Files>
+
+
+ErrorLog "|/usr/sbin/rotatelogs {{ httpd_log_base }}/error_log.%Y-%m-%d 86400"
+LogLevel warn
+LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
+LogFormat "%h %l %u %t \"%r\" %>s %b %T %a %A %X %D IO %I %O \"%{Referer}i\" \"%{User-Agent}i\"" common
+LogFormat "%{Referer}i -> %U" referer
+LogFormat "%{User-agent}i" agent
+CustomLog "|/usr/sbin/rotatelogs {{ httpd_log_base }}/access_log.%Y-%m-%d 86400" common
+
+
+#<IfModule alias_module>
+#    ScriptAlias /cgi-bin/ "/var/www/cgi-bin/"
+#</IfModule>
+
+#
+# "/var/www/cgi-bin" should be changed to whatever your ScriptAliased
+# CGI directory exists, if you have that configured.
+#
+<Directory "/var/www/cgi-bin">
+    AllowOverride None
+    Options None
+    Require all granted
+</Directory>
+
+<IfModule mime_module>
+    TypesConfig /etc/mime.types
+    AddType application/x-compress .Z
+    AddType application/x-gzip .gz .tgz
+    AddType text/html .shtml
+    AddOutputFilter INCLUDES .shtml
+</IfModule>
+
+<IfModule mime_magic_module>
+    MIMEMagicFile conf/magic
+</IfModule>
+
+
+<IfModule mod_headers.c>
+	Header set X-XSS-Protection "1; mode=block"
+	Header always append X-Frame-Options SAMEORIGIN
+	Header set X-Content-Type-Options nosniff
+	Header set Content-Security-Policy "default-src 'self';" 
+	Header unset ETag
+        FileETag None
+</IfModule>
+
+<IfModule reqtimeout_module>
+  RequestReadTimeout header=20-40,MinRate=500 body=20,MinRate=500
+</IfModule>
+
+IncludeOptional conf.d/*.conf
+----------------------------------------------------------------------------------------------------------------------
+
+
+httpd_ctl.sh.j2
+
+#!/bin/sh
+# @@@ ANSIBLE_MANAGED @@@
+# Author: Web Engineering
+# Script: HTTP Cycle script
+# Date: 25-OCT-2017
+# Version: v1.0 - Script to cycle httpd instances for AWS Instances
+#-----------------------------------------------------
+
+runuser=`whoami`
+
+if [ "${runuser}" == "httpadm" ] ; then
+      httpd -d {{ httpd_home }} -k $1
+      if [ $? -ne 0 ]; then
+         echo "ERROR: HTTPD INSTANCE NOT STARTED"
+      else
+         echo "OK"
+      fi
+
+elif [ "${runuser}" != "httpadm" ] ; then
+   echo ":> User not httpadm... "
+   echo "ERROR: HTTPD INSTANCE NOT STARTED"
+   exit 1
+fi
+---------------------------------------------------------------------------------------------------------------------------------
+mod_proxy_balancer.conf.j2
+
+
+#Additional Modules
+# @@@ ANSIBLE MANAGED @@@
+LoadModule lbmethod_bybusyness_module modules/mod_lbmethod_bybusyness.so
+LoadModule lbmethod_byrequests_module modules/mod_lbmethod_byrequests.so
+LoadModule lbmethod_bytraffic_module modules/mod_lbmethod_bytraffic.so
+LoadModule lbmethod_heartbeat_module modules/mod_lbmethod_heartbeat.so
+LoadModule proxy_balancer_module modules/mod_proxy_balancer.so
+LoadModule proxy_express_module modules/mod_proxy_express.so
+LoadModule proxy_fcgi_module modules/mod_proxy_fcgi.so
+LoadModule proxy_fdpass_module modules/mod_proxy_fdpass.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+LoadModule proxy_scgi_module modules/mod_proxy_scgi.so
+LoadModule proxy_wstunnel_module modules/mod_proxy_wstunnel.so
+LoadModule slotmem_shm_module modules/mod_slotmem_shm.so
+
+
+<Proxy balancer://mycluster>
+{{ mod_balancer }}
+</Proxy>
+
+
+RewriteEngine On
+
+RewriteCond %{HTTP:X-Forwarded-Proto} https
+RewriteRule ^/$    https://%{SERVER_NAME}/{{ tomcat_webapp_context_dir | basename }}/index.jsp [R,L]
+
+RewriteRule ^/$    /{{ tomcat_webapp_context_dir | basename }}/index.jsp [R,L]
+
+
+ProxyPass / balancer://mycluster/ stickysession=JSESSIONID
+ProxyPassReverse / balancer://mycluster/ stickysession=JSESSIONID
+
+
+----------------------------------------------------------------------------------------------------------------------------------
+ssl.cong.j2
+
+Listen 8443
+
+AddType application/x-x509-ca-cert .crt
+AddType application/x-pkcs7-crl    .crl
+
+SSLPassPhraseDialog builtin
+
+SSLSessionCache         shmcb:{{ httpd_home }}/run/sslcache(512000)
+SSLSessionCacheTimeout  300
+
+Mutex default
+SSLRandomSeed startup file:/dev/urandom  256
+SSLRandomSeed connect builtin
+SSLCryptoDevice builtin
+
+<VirtualHost _default_:8443>
+
+ErrorLog "|/usr/sbin/rotatelogs {{ httpd_log_base }}/ssl_error_log.%Y-%m-%d 86400"
+TransferLog "|/usr/sbin/rotatelogs {{ httpd_log_base }}/ssl_access_log.%Y-%m-%d 86400"
+LogLevel warn
+
+SSLEngine on
+SSLProtocol -ALL +TLSv1.1 +TLSv1.2
+SSLCipherSuite ALL:!aNULL:!eNULL:!EXP:!ADH:!EXPORT:!SSLv2:!DES:!3DES:!RC4:+HIGH:+MEDIUM:!LOW
+
+
+<Files ~ "\.(cgi|shtml|phtml|php3?)$">
+    SSLOptions +StdEnvVars
+</Files>
+<Directory "/var/www/cgi-bin">
+    SSLOptions +StdEnvVars
+</Directory>
+
+BrowserMatch "MSIE [2-5]" \
+         nokeepalive ssl-unclean-shutdown \
+         downgrade-1.0 force-response-1.0
+
+CustomLog "|/usr/sbin/rotatelogs {{ httpd_log_base }}/ssl_request_log.%Y-%m-%d 86400" \
+          "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b"
+</VirtualHost>
+----------------------------------------------------------------------------------------------------------------------
