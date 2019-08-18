@@ -49,7 +49,29 @@
 
 - name: Copy mod_proxy_balancer template
   template: src=mod_proxy_balancer.conf.j2 dest="/apps/httpd/conf.d/mod_proxy_balancer.conf" owner={{ http_user }} group={{ http_user }}
+-----------------------------------------------
 
+
+---
+# handlers file for rhel7httpd
+- name: stop httpd instance
+  shell: su - {{ http_user }} -c "/apps/httpd/bin/httpd_ctl.sh stop"
+  args:
+     warn: false
+  become: yes
+  register: stop_httpd_out
+- debug: msg="{{ stop_httpd_out.stdout_lines }}"
+  when: "{{stop_httpd_out.changed == true}}"
+- pause:
+    seconds: 20
+- name: start httpd instance
+  shell: su - {{ http_user }} -c "/apps/httpd/bin/httpd_ctl.sh start"
+  args:
+     warn: false
+  become: yes
+  register: start_httpd_out
+- debug: msg="{{ start_httpd_out.stdout_lines }}"
+  when: "{{start_httpd_out.changed == true}}"
 
 -----------------------------------------------------------------
 
