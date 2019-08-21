@@ -1,0 +1,148 @@
+
+
+
+
+#!groovy
+
+node('linux && ansible') {
+  def baseDir
+  def currentBranch
+  def currentTag
+  def newTag
+  def packBaseDir
+  def packPath
+	def packName
+	def packExists
+
+  def mvnHome = installTool 'apache-maven-3.3.9'
+  def jdkHome = installTool 'jdk1.8.0_91'
+  def nodeHome = installTool 'node-v6.10.0'
+
+  def deployEnv = 'aws'
+  def remoteUser = 'ec2-user'
+
+  def packPrefix = 'portal-ui'      
+	def artifactoryBaseUrl = 'https://artifactory.global.standardchartered.com/artifactory'
+  def artifactoryTargetUrl = 'generic-release/enable/WMCD/portal'
+	def stashUrl = 'https://bitbucket.global.standardchartered.com/scm/WMCD/portal-ui.git'
+   
+  try {
+    stage('Clean Workspace') {
+			step([$class: 'WsCleanup'])
+		}
+
+   	stage('Checkout') { 
+      checkout scm
+      notifyStash
+   	}
+
+   	stage('Initialize') {
+      baseDir = pwd()
+      packPath = baseDir + '/release/'
+			currentBranch = sh (script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+			currentTag = sh (script: 'git describe --abbrev=0 --tags', returnStdout: true).trim()
+   	}
+
+    stage('Clean') {
+      sh 'rm -rf dist dist.tar.gz release'
+      sh "mkdir -p ${packPath}"
+    }
+
+		stage('Check if package exists') {
+			sh "cd $WORKSPACE/jenkins;chmod +x git-tag.sh; ./git-tag.sh"
+			newTag = readFile("${env.WORKSPACE}/jenkins/tag.txt").trim()
+			echo "currentTag : [${currentTag}]"
+			echo "newTag : [${newTag}]"
+			packName = packPrefix + '-' + newTag + '.tar'
+			String exists = sh (script: "curl -I -w '%{http_code}' -s -o /dev/null ${artifactoryBaseUrl}/${artifactoryTargetUrl}/${packName}", returnStdout: true).trim()
+
+			if (exists == '200') {
+				packExists = true
+				echo "Package [$packName] already exists"
+			} else {
+				packExists = false
+				echo "Package [$packName] does not exists"
+			}
+		}
+
+    stage('Install npm') {
+      if (packExists == false) {
+        withEnv(["PATH+NODE=${nodeHome}/bin","NODE_HOME=${nodeHome}"]) {
+          sh 'npm install --max-old-space-size=200'
+        }
+      } else {
+				echo "Skipping the npm install as package for ${newTag} exists"
+			}
+    }
+
+    stage('Build') {
+      if (packExists == false) {
+        withEnv(["JAVA_HOME=${jdkHome}", "NODE_HOME=${nodeHome}", "PATH+NODE=${nodeHome}/bin", "MAVEN_HOME=${mvnHome}", "PATH+MAVEN=${mvnHome}/bin"]) {
+          sh 'npm run ng build --prod'
+        }
+      } else {
+				echo "Skipping the build as package for ${newTag} exists"
+			}
+    }
+
+    stage('Stash') {
+      if (packExists == false) {
+        sh "cd dist && tar -cvf ${packPath}/${packName}.tar *"
+      } else {
+				echo "Skipping the stash as package for ${newTag} exists"
+			}
+    }
+
+    stage('Tag') {
+      echo "Creating new tag [${newTag}]"
+      sh 'git config credential.helper "/bin/bash ' + env.WORKSPACE + '/jenkins/credential-helper.sh"'
+      withCredentials([[$class: 'UsernamePasswordMultiBinding',
+        credentialsId: 'vx-pipeline-readonly',
+        usernameVariable: 'GIT_USERNAME',
+        passwordVariable: 'GIT_PASSWORD']]) {
+          sh "cd $WORKSPACE/jenkins"
+          sh "git tag ${newTag}"
+          sh "git remote set-url origin ${stashUrl}"
+          sh 'git push origin --tags'
+      }
+    }
+
+    stage('Publish to Artifactory') {
+			if (packExists == false) {
+				echo "Publishing the pack [${packName}] to artifactory [${artifactoryTargetUrl}]"
+        uploadToArtifactory {
+					pattern = packPath
+					target = "${artifactoryTargetUrl}/${packName}"
+		    }
+			} else {
+				echo 'Skipping the publish as the current branch is not a develop branch'
+			}
+		}
+
+	  stage("Deploy to ${deployEnv}") {
+      withEnv(['ANSIBLE_HOST_KEY_CHECKING=False']) {
+        ansiblePlaybook credentialsId: 'devopskey',
+        extras: "-v -e deployEnv=${deployEnv} -e remoteUser=${remoteUser} -e packName=${packName} -e artifactoryUrl=${artifactoryBaseUrl}/${artifactoryTargetUrl}",
+        installation: 'Ansible 2.1',
+        inventory: 'hosts',
+        playbook: 'playbooks/deploy.yml'
+      }
+      notifyStash
+	  }
+  } catch (err) {
+    notifyStash
+    throw err
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
